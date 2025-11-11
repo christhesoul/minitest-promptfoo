@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive README with examples
 - Basic test coverage
 
-## [0.1.0] - TBD
+## [0.1.0] - Blinded by the Light
 
 - Initial release
+
+## [0.1.1] - Spirit in the Night
+
+- Fixed bug causing unbound method call in Rails apps
