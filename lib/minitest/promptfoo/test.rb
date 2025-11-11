@@ -5,6 +5,7 @@ require "json"
 require "tmpdir"
 require "open3"
 require "minitest/test"
+require_relative "assertion_builder"
 require_relative "failure_formatter"
 
 module Minitest
@@ -38,71 +39,6 @@ module Minitest
     class Test < Minitest::Test
       class PromptNotFoundError < StandardError; end
       class EvaluationError < StandardError; end
-
-      # DSL for building promptfoo assertions in a minitest-like style
-      class AssertionBuilder
-        def initialize
-          @assertions = []
-        end
-
-        # String inclusion check
-        def includes(text)
-          @assertions << {
-            "type" => "contains",
-            "value" => text
-          }
-        end
-
-        # Regex pattern matching
-        def matches(pattern)
-          @assertions << {
-            "type" => "regex",
-            "value" => pattern.source
-          }
-        end
-
-        # Exact equality check
-        def equals(expected)
-          @assertions << {
-            "type" => "equals",
-            "value" => expected
-          }
-        end
-
-        # JSON structure validation using JavaScript
-        def json_includes(key:, value:)
-          @assertions << {
-            "type" => "is-json"
-          }
-          # Handle both string output (needs parsing) and object output (already parsed)
-          @assertions << {
-            "type" => "javascript",
-            "value" => "(typeof output === 'string' ? JSON.parse(output) : output)[#{key.inspect}] === #{value.to_json}"
-          }
-        end
-
-        # Custom JavaScript assertion
-        def javascript(js_code)
-          @assertions << {
-            "type" => "javascript",
-            "value" => js_code
-          }
-        end
-
-        # LLM-as-judge rubric evaluation
-        def rubric(criteria, threshold: 0.5)
-          @assertions << {
-            "type" => "llm-rubric",
-            "value" => criteria,
-            "threshold" => threshold
-          }
-        end
-
-        # Convert to promptfoo assertion format
-        def to_promptfoo_assertions
-          @assertions
-        end
-      end
 
       # Class-level provider configuration (inheritable)
       class << self

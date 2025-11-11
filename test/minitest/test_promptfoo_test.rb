@@ -6,7 +6,7 @@ module Minitest
   module Promptfoo
     class TestPromptfooTest < Minitest::Test
       def test_assertion_builder_includes
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.includes("hello")
 
         assertions = builder.to_promptfoo_assertions
@@ -16,7 +16,7 @@ module Minitest
       end
 
       def test_assertion_builder_matches
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.matches(/\d+/)
 
         assertions = builder.to_promptfoo_assertions
@@ -26,7 +26,7 @@ module Minitest
       end
 
       def test_assertion_builder_equals
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.equals("exact match")
 
         assertions = builder.to_promptfoo_assertions
@@ -36,7 +36,7 @@ module Minitest
       end
 
       def test_assertion_builder_json_includes
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.json_includes(key: "status", value: "success")
 
         assertions = builder.to_promptfoo_assertions
@@ -46,7 +46,7 @@ module Minitest
       end
 
       def test_assertion_builder_rubric
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.rubric("Response is professional", threshold: 0.8)
 
         assertions = builder.to_promptfoo_assertions
@@ -57,7 +57,7 @@ module Minitest
       end
 
       def test_assertion_builder_multiple_assertions
-        builder = Minitest::Promptfoo::Test::AssertionBuilder.new
+        builder = Minitest::Promptfoo::AssertionBuilder.new
         builder.includes("hello")
         builder.matches(/world/)
         builder.rubric("Be nice")
