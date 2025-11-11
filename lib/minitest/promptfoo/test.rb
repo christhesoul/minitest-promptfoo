@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require "yaml"
-require "json"
 require "tmpdir"
-require "open3"
 require "minitest/test"
 require_relative "assertion_builder"
 require_relative "failure_formatter"
+require_relative "promptfoo_runner"
 
 module Minitest
   module Promptfoo
@@ -130,11 +129,12 @@ module Minitest
 
           debug("Promptfoo Config", config_yaml)
 
-          result = shell_out_to_promptfoo(config_path, tmpdir, show_output: show_output, pre_render: pre_render)
+          runner = PromptfooRunner.new(Minitest::Promptfoo.configuration)
+          result = runner.execute(config_path, tmpdir, show_output: show_output, pre_render: pre_render)
 
           debug("Promptfoo Result", result.inspect)
 
-          output = parse_promptfoo_output(output_path)
+          output = runner.parse_output(output_path)
 
           unless result[:success] || output.any?
             raise EvaluationError, <<~ERROR
@@ -232,50 +232,6 @@ module Minitest
           ],
           "outputPath" => output_path
         }
-      end
-
-      def shell_out_to_promptfoo(config_path, working_dir, pre_render:, show_output: false)
-        env_vars = build_env_vars(pre_render: pre_render)
-        cmd = build_command(config_path)
-
-        if show_output
-          execute_with_output(env_vars, cmd, working_dir)
-        else
-          execute_silently(env_vars, cmd, working_dir)
-        end
-      end
-
-      def build_env_vars(pre_render:)
-        pre_render ? {"PROMPTFOO_DISABLE_TEMPLATING" => "true"} : {}
-      end
-
-      def build_command(config_path)
-        base_cmd = Minitest::Promptfoo.configuration.resolve_executable
-        args = ["eval", "-c", config_path, "--no-cache"]
-
-        if base_cmd.start_with?("npx")
-          base_cmd.split + args
-        else
-          [base_cmd] + args
-        end
-      end
-
-      def execute_with_output(env_vars, cmd, working_dir)
-        success = system(env_vars, *cmd, chdir: working_dir)
-        {success: success, stdout: "", stderr: ""}
-      end
-
-      def execute_silently(env_vars, cmd, working_dir)
-        stdout, stderr, status = Open3.capture3(env_vars, *cmd, chdir: working_dir)
-        {success: status.success?, stdout: stdout, stderr: stderr}
-      end
-
-      def parse_promptfoo_output(output_path)
-        return {} unless File.exist?(output_path)
-
-        JSON.parse(File.read(output_path))
-      rescue JSON::ParserError => e
-        raise EvaluationError, "Failed to parse promptfoo output: #{e.message}"
       end
     end
   end
