@@ -39,7 +39,7 @@ module Minitest
               return candidate if File.exist?(candidate)
             end
 
-            raise PromptNotFoundError, "Could not find prompt file for #{test_file_path}"
+            raise Minitest::Promptfoo::TestMethods::PromptNotFoundError, "Could not find prompt file for #{test_file_path}"
           end
         end
       end
