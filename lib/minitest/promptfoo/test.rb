@@ -40,30 +40,34 @@ module Minitest
       class PromptNotFoundError < StandardError; end
       class EvaluationError < StandardError; end
 
-      # Class-level provider configuration (inheritable)
+      # Class-level configuration
       class << self
-        attr_accessor :_providers
+        def debug?
+          ENV["DEBUG_PROMPT_TEST"] == "1"
+        end
 
         def providers
-          @_providers || "echo"
+          @providers || "echo"
         end
 
-        def providers=(value)
-          @_providers = value
-        end
+        attr_writer :providers
 
         def inherited(subclass)
           super
-          subclass._providers = _providers
+          subclass.providers = providers if defined?(@providers)
         end
       end
 
       def prompt_path
-        raise NotImplementedError, "Subclasses must implement #prompt_path"
+        raise NotImplementedError, "#{self.class}#prompt_path must be implemented"
       end
 
       def prompt_content
-        @prompt_content ||= File.read(prompt_path)
+        @prompt_content ||= begin
+          path = prompt_path
+          raise PromptNotFoundError, "Prompt file not found: #{path}" unless File.exist?(path)
+          File.read(path, encoding: "UTF-8")
+        end
       end
 
       # Minitest-like DSL for prompt testing
@@ -78,8 +82,8 @@ module Minitest
         builder = AssertionBuilder.new
         yield(builder)
 
-        evaluate_prompt(
-          prompt_content,
+        output = evaluate_prompt(
+          prompt_text: prompt_content,
           vars: vars,
           providers: providers,
           assertions: builder.to_promptfoo_assertions,
@@ -87,11 +91,13 @@ module Minitest
           pre_render: pre_render
         )
 
-        # Satisfy minitest's assertion count requirement
-        pass
+        # Real assertion: verify promptfoo produced results
+        assert(output.any?, "Promptfoo evaluation produced no output")
+
+        output
       end
 
-      def evaluate_prompt(prompt_text, vars:, pre_render:, providers: nil, assertions: [], show_output: false, verbose: false)
+      def evaluate_prompt(prompt_text:, vars:, providers: nil, assertions: [], pre_render: false, verbose: false, show_output: false)
         Dir.mktmpdir do |tmpdir|
           config_path = File.join(tmpdir, "promptfooconfig.yaml")
           output_path = File.join(tmpdir, "output.json")
@@ -122,27 +128,20 @@ module Minitest
           config_yaml = YAML.dump(config)
           File.write(config_path, config_yaml)
 
-          if ENV["DEBUG_PROMPT_TEST"]
-            puts "\n=== Promptfoo Config ===\n"
-            puts config_yaml
-            puts "\n======================\n"
-          end
+          debug("Promptfoo Config", config_yaml)
 
           result = shell_out_to_promptfoo(config_path, tmpdir, show_output: show_output, pre_render: pre_render)
 
-          if ENV["DEBUG_PROMPT_TEST"]
-            puts "\n=== Promptfoo Result ===\n"
-            puts result.inspect
-            puts "\n======================\n"
-          end
+          debug("Promptfoo Result", result.inspect)
 
           output = parse_promptfoo_output(output_path)
 
           unless result[:success] || output.any?
-            error_msg = "promptfoo evaluation failed\n"
-            error_msg += "STDOUT: #{result[:stdout]}\n" if result[:stdout]&.length&.positive?
-            error_msg += "STDERR: #{result[:stderr]}\n" if result[:stderr]&.length&.positive?
-            raise EvaluationError, error_msg
+            raise EvaluationError, <<~ERROR
+              promptfoo evaluation failed
+              STDOUT: #{result[:stdout]}
+              STDERR: #{result[:stderr]}
+            ERROR
           end
 
           check_provider_failures(output, providers_array, verbose: verbose) if assertions.any?
@@ -153,30 +152,36 @@ module Minitest
 
       private
 
+      def debug(title, content)
+        return unless self.class.debug?
+
+        warn "\n=== #{title} ==="
+        warn content
+        warn "=" * (title.length + 8)
+        warn ""
+      end
+
       # Simple array wrapper (replaces ActiveSupport's Array.wrap)
       def wrap_array(object)
-        if object.nil?
-          []
-        elsif object.respond_to?(:to_ary)
-          object.to_ary || [object]
-        else
-          [object]
+        case object
+        when nil then []
+        when Array then object
+        else [object]
         end
       end
 
       # Simple deep stringify keys (replaces ActiveSupport method)
       def deep_stringify_keys(hash)
         hash.each_with_object({}) do |(key, value), result|
-          new_key = key.to_s
-          new_value = case value
-          when Hash
-            deep_stringify_keys(value)
-          when Array
-            value.map { |v| v.is_a?(Hash) ? deep_stringify_keys(v) : v }
-          else
-            value
-          end
-          result[new_key] = new_value
+          result[key.to_s] = stringify_value(value)
+        end
+      end
+
+      def stringify_value(value)
+        case value
+        when Hash then deep_stringify_keys(value)
+        when Array then value.map { |v| stringify_value(v) }
+        else value
         end
       end
 
@@ -230,51 +235,47 @@ module Minitest
       end
 
       def shell_out_to_promptfoo(config_path, working_dir, pre_render:, show_output: false)
-        promptfoo_cmd = Minitest::Promptfoo.configuration.resolve_executable
-
-        env_vars = {}
-        env_vars["PROMPTFOO_DISABLE_TEMPLATING"] = "true" if pre_render
-
-        # Handle both "npx promptfoo" and direct path
-        if promptfoo_cmd.start_with?("npx")
-          cmd_parts = promptfoo_cmd.split
-          cmd = cmd_parts + ["eval", "-c", config_path, "--no-cache"]
-        else
-          cmd = [promptfoo_cmd, "eval", "-c", config_path, "--no-cache"]
-        end
+        env_vars = build_env_vars(pre_render: pre_render)
+        cmd = build_command(config_path)
 
         if show_output
-          system(
-            env_vars,
-            *cmd,
-            chdir: working_dir
-          )
-          status = $?
-
-          {
-            success: status.success?,
-            stdout: "",
-            stderr: ""
-          }
+          execute_with_output(env_vars, cmd, working_dir)
         else
-          stdout, stderr, status = Open3.capture3(
-            env_vars,
-            *cmd,
-            chdir: working_dir
-          )
-
-          {
-            success: status.success?,
-            stdout: stdout,
-            stderr: stderr
-          }
+          execute_silently(env_vars, cmd, working_dir)
         end
+      end
+
+      def build_env_vars(pre_render:)
+        pre_render ? {"PROMPTFOO_DISABLE_TEMPLATING" => "true"} : {}
+      end
+
+      def build_command(config_path)
+        base_cmd = Minitest::Promptfoo.configuration.resolve_executable
+        args = ["eval", "-c", config_path, "--no-cache"]
+
+        if base_cmd.start_with?("npx")
+          base_cmd.split + args
+        else
+          [base_cmd] + args
+        end
+      end
+
+      def execute_with_output(env_vars, cmd, working_dir)
+        success = system(env_vars, *cmd, chdir: working_dir)
+        {success: success, stdout: "", stderr: ""}
+      end
+
+      def execute_silently(env_vars, cmd, working_dir)
+        stdout, stderr, status = Open3.capture3(env_vars, *cmd, chdir: working_dir)
+        {success: status.success?, stdout: stdout, stderr: stderr}
       end
 
       def parse_promptfoo_output(output_path)
         return {} unless File.exist?(output_path)
 
         JSON.parse(File.read(output_path))
+      rescue JSON::ParserError => e
+        raise EvaluationError, "Failed to parse promptfoo output: #{e.message}"
       end
     end
   end
