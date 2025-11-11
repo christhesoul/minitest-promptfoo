@@ -51,27 +51,29 @@ module Minitest
       class RailsTest < ActiveSupport::TestCase
         include Minitest::Promptfoo::Rails
 
-        # Borrow all the assertion methods from Test
-        # but keep ActiveSupport::TestCase as the base
-        include Minitest::Promptfoo::Test.instance_methods(false).each_with_object(Module.new) { |m, mod|
-          mod.define_method(m, Minitest::Promptfoo::Test.instance_method(m))
-        }
+        # Copy instance methods from Test
+        Minitest::Promptfoo::Test.instance_methods(false).each do |method_name|
+          define_method(method_name) do |*args, **kwargs, &block|
+            # Delegate to Test's implementation
+            Minitest::Promptfoo::Test.instance_method(method_name).bind_call(self, *args, **kwargs, &block)
+          end
+        end
 
         # Include class methods
         class << self
-          attr_accessor :_providers
+          def debug?
+            ENV["DEBUG_PROMPT_TEST"] == "1"
+          end
 
           def providers
-            @_providers || "echo"
+            @providers || "echo"
           end
 
-          def providers=(value)
-            @_providers = value
-          end
+          attr_writer :providers
 
           def inherited(subclass)
             super
-            subclass._providers = _providers
+            subclass.providers = providers if defined?(@providers)
           end
         end
       end
