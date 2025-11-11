@@ -47,33 +47,38 @@ module Minitest
 
     # Convenience class that combines Test + Rails integration
     # Inherits from ActiveSupport::TestCase if available, otherwise Minitest::Test
-    if defined?(ActiveSupport::TestCase)
-      class RailsTest < ActiveSupport::TestCase
-        include Minitest::Promptfoo::Rails
+    if defined?(ActiveSupport)
+      # Defer class definition until Rails test framework is fully loaded
+      ActiveSupport.on_load(:active_support_test_case) do
+        unless Minitest::Promptfoo.const_defined?(:RailsTest)
+          class RailsTest < ActiveSupport::TestCase
+            include Minitest::Promptfoo::Rails
 
-        # Copy instance methods from Test
-        Minitest::Promptfoo::Test.instance_methods(false).each do |method_name|
-          define_method(method_name) do |*args, **kwargs, &block|
-            # Delegate to Test's implementation
-            Minitest::Promptfoo::Test.instance_method(method_name).bind_call(self, *args, **kwargs, &block)
-          end
-        end
+            # Copy instance methods from Test
+            Minitest::Promptfoo::Test.instance_methods(false).each do |method_name|
+              define_method(method_name) do |*args, **kwargs, &block|
+                # Delegate to Test's implementation
+                Minitest::Promptfoo::Test.instance_method(method_name).bind_call(self, *args, **kwargs, &block)
+              end
+            end
 
-        # Include class methods
-        class << self
-          def debug?
-            ENV["DEBUG_PROMPT_TEST"] == "1"
-          end
+            # Include class methods
+            class << self
+              def debug?
+                ENV["DEBUG_PROMPT_TEST"] == "1"
+              end
 
-          def providers
-            @providers || "echo"
-          end
+              def providers
+                @providers || "echo"
+              end
 
-          attr_writer :providers
+              attr_writer :providers
 
-          def inherited(subclass)
-            super
-            subclass.providers = providers if defined?(@providers)
+              def inherited(subclass)
+                super
+                subclass.providers = providers if defined?(@providers)
+              end
+            end
           end
         end
       end
