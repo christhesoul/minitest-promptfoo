@@ -152,39 +152,6 @@ module Minitest
 
       private
 
-      def debug(title, content)
-        return unless self.class.debug?
-
-        warn "\n=== #{title} ==="
-        warn content
-        warn "=" * (title.length + 8)
-        warn ""
-      end
-
-      # Simple array wrapper (replaces ActiveSupport's Array.wrap)
-      def wrap_array(object)
-        case object
-        when nil then []
-        when Array then object
-        else [object]
-        end
-      end
-
-      # Simple deep stringify keys (replaces ActiveSupport method)
-      def deep_stringify_keys(hash)
-        hash.each_with_object({}) do |(key, value), result|
-          result[key.to_s] = stringify_value(value)
-        end
-      end
-
-      def stringify_value(value)
-        case value
-        when Hash then deep_stringify_keys(value)
-        when Array then value.map { |v| stringify_value(v) }
-        else value
-        end
-      end
-
       def check_provider_failures(output, providers, verbose: false)
         results = output.dig("results", "results") || []
         passing_providers = []
@@ -232,6 +199,39 @@ module Minitest
           ],
           "outputPath" => output_path
         }
+      end
+
+      def debug(title, content)
+        return unless self.class.debug?
+
+        warn "\n=== #{title} ==="
+        warn content
+        warn "=" * (title.length + 8)
+        warn ""
+      end
+
+      # Simple array wrapper (replaces ActiveSupport's Array.wrap)
+      def wrap_array(object)
+        case object
+        when nil then []
+        when Array then object
+        else [object]
+        end
+      end
+
+      # Simple deep stringify keys (replaces ActiveSupport method)
+      def deep_stringify_keys(hash)
+        hash.each_with_object({}) do |(key, value), result|
+          result[key.to_s] = stringify_value(value)
+        end
+      end
+
+      def stringify_value(value)
+        case value
+        when Hash then deep_stringify_keys(value)
+        when Array then value.map { |v| stringify_value(v) }
+        else value
+        end
       end
     end
   end
