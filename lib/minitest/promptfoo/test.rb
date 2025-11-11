@@ -48,7 +48,7 @@ module Minitest
         def includes(text)
           @assertions << {
             "type" => "contains",
-            "value" => text,
+            "value" => text
           }
         end
 
@@ -56,7 +56,7 @@ module Minitest
         def matches(pattern)
           @assertions << {
             "type" => "regex",
-            "value" => pattern.source,
+            "value" => pattern.source
           }
         end
 
@@ -64,19 +64,19 @@ module Minitest
         def equals(expected)
           @assertions << {
             "type" => "equals",
-            "value" => expected,
+            "value" => expected
           }
         end
 
         # JSON structure validation using JavaScript
         def json_includes(key:, value:)
           @assertions << {
-            "type" => "is-json",
+            "type" => "is-json"
           }
           # Handle both string output (needs parsing) and object output (already parsed)
           @assertions << {
             "type" => "javascript",
-            "value" => "(typeof output === 'string' ? JSON.parse(output) : output)[#{key.inspect}] === #{value.to_json}",
+            "value" => "(typeof output === 'string' ? JSON.parse(output) : output)[#{key.inspect}] === #{value.to_json}"
           }
         end
 
@@ -84,7 +84,7 @@ module Minitest
         def javascript(js_code)
           @assertions << {
             "type" => "javascript",
-            "value" => js_code,
+            "value" => js_code
           }
         end
 
@@ -93,7 +93,7 @@ module Minitest
           @assertions << {
             "type" => "llm-rubric",
             "value" => criteria,
-            "threshold" => threshold,
+            "threshold" => threshold
           }
         end
 
@@ -147,7 +147,7 @@ module Minitest
           providers: providers,
           assertions: builder.to_promptfoo_assertions,
           verbose: verbose,
-          pre_render: pre_render,
+          pre_render: pre_render
         )
 
         # Satisfy minitest's assertion count requirement
@@ -179,7 +179,7 @@ module Minitest
             vars: config_vars,
             providers: providers_array,
             assertions: assertions,
-            output_path: output_path,
+            output_path: output_path
           )
 
           config_yaml = YAML.dump(config)
@@ -232,13 +232,13 @@ module Minitest
         hash.each_with_object({}) do |(key, value), result|
           new_key = key.to_s
           new_value = case value
-                      when Hash
-                        deep_stringify_keys(value)
-                      when Array
-                        value.map { |v| v.is_a?(Hash) ? deep_stringify_keys(v) : v }
-                      else
-                        value
-                      end
+          when Hash
+            deep_stringify_keys(value)
+          when Array
+            value.map { |v| v.is_a?(Hash) ? deep_stringify_keys(v) : v }
+          else
+            value
+          end
           result[new_key] = new_value
         end
       end
@@ -257,7 +257,7 @@ module Minitest
           else
             failing_providers << {
               id: provider_id,
-              result: provider_result,
+              result: provider_result
             }
           end
         end
@@ -346,7 +346,7 @@ module Minitest
             threshold: result.dig("assertion", "threshold"),
             score: result.dig("score"),
             reason: result.dig("reason"),
-            named_scores: result.dig("namedScores"),
+            named_scores: result.dig("namedScores")
           }
         end
       end
@@ -368,7 +368,7 @@ module Minitest
           expected_json
         end
 
-        { key: key, expected: expected_value }
+        {key: key, expected: expected_value}
       end
 
       def extract_json_value(output_text, key)
@@ -423,7 +423,7 @@ module Minitest
 
         if output_text && output_text.to_s.length > 0
           text = output_text.is_a?(String) ? output_text : JSON.pretty_generate(output_text)
-          snippet = text.length > 100 ? "#{text[0..100]}..." : text
+          snippet = (text.length > 100) ? "#{text[0..100]}..." : text
           msg += "    Output: #{snippet.inspect}\n"
         end
 
@@ -434,12 +434,10 @@ module Minitest
         score = failure[:score] || 0
         threshold = failure[:threshold] || 0.5
 
+        msg = "  ✗ rubric (score: #{score.round(2)}/#{threshold})\n"
         if score >= threshold
-          msg = "  ✗ rubric (score: #{score.round(2)}/#{threshold})\n"
           msg += "      Note: Score meets threshold but one or more criteria failed\n"
           msg += "      Promptfoo requires ALL criteria to pass, not just the aggregate score\n"
-        else
-          msg = "  ✗ rubric (score: #{score.round(2)}/#{threshold})\n"
         end
 
         if verbose
@@ -482,10 +480,10 @@ module Minitest
           "tests" => [
             {
               "vars" => vars.transform_keys(&:to_s),
-              "assert" => assertions,
-            },
+              "assert" => assertions
+            }
           ],
-          "outputPath" => output_path,
+          "outputPath" => output_path
         }
       end
 
@@ -507,26 +505,26 @@ module Minitest
           system(
             env_vars,
             *cmd,
-            chdir: working_dir,
+            chdir: working_dir
           )
           status = $?
 
           {
             success: status.success?,
             stdout: "",
-            stderr: "",
+            stderr: ""
           }
         else
           stdout, stderr, status = Open3.capture3(
             env_vars,
             *cmd,
-            chdir: working_dir,
+            chdir: working_dir
           )
 
           {
             success: status.success?,
             stdout: stdout,
-            stderr: stderr,
+            stderr: stderr
           }
         end
       end

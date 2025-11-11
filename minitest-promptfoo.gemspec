@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
-        f.start_with?(*%w[bin/ Gemfile .gitignore test/ .rubocop.yml])
+        f.start_with?(*%w[bin/ Gemfile .gitignore test/ .standard.yml])
     end
   end
   spec.bindir = "exe"
@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
 
   # Development dependencies
   spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rubocop", "~> 1.21"
+  spec.add_development_dependency "standard", ">= 1.35.1"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

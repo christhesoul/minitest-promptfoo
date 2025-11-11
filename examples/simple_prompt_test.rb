@@ -19,14 +19,14 @@ class SimplePromptTest < Minitest::Promptfoo::Test
   end
 
   def test_prompt_includes_name
-    assert_prompt(vars: { name: "Alice", tone: "friendly" }) do |response|
+    assert_prompt(vars: {name: "Alice", tone: "friendly"}) do |response|
       response.includes("Alice")
       response.includes("friendly")
     end
   end
 
   def test_prompt_with_different_tone
-    assert_prompt(vars: { name: "Bob", tone: "professional" }) do |response|
+    assert_prompt(vars: {name: "Bob", tone: "professional"}) do |response|
       response.includes("Bob")
       response.includes("professional")
     end
