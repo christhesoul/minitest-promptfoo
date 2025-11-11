@@ -51,16 +51,16 @@ module Minitest
       # Defer class definition until Rails test framework is fully loaded
       ActiveSupport.on_load(:active_support_test_case) do
         unless Minitest::Promptfoo.const_defined?(:RailsTest)
+          # Extract Test's behavior into a module we can include
+          test_behavior = Module.new do
+            Minitest::Promptfoo::Test.instance_methods(false).each do |method_name|
+              define_method(method_name, Minitest::Promptfoo::Test.instance_method(method_name))
+            end
+          end
+
           class RailsTest < ActiveSupport::TestCase
             include Minitest::Promptfoo::Rails
-
-            # Copy instance methods from Test
-            Minitest::Promptfoo::Test.instance_methods(false).each do |method_name|
-              define_method(method_name) do |*args, **kwargs, &block|
-                # Delegate to Test's implementation
-                Minitest::Promptfoo::Test.instance_method(method_name).bind_call(self, *args, **kwargs, &block)
-              end
-            end
+            include test_behavior
 
             # Include class methods
             class << self
