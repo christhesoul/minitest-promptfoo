@@ -28,3 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.1] - Spirit in the Night
 
 - Fixed bug causing unbound method call in Rails apps
+
+## [0.1.2] - Growin' Up
+
+- Fixed more bugs relating to Rails implementation

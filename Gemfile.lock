@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    minitest-promptfoo (0.1.1)
+    minitest-promptfoo (0.1.2)
       minitest (~> 5.0)
 
 GEM
