@@ -85,7 +85,7 @@ In Rails, the gem automatically discovers prompt files based on test file paths:
 
 ```ruby
 # test/services/greeting_service_test.rb
-class GreetingServiceTest < Minitest::Promptfoo::RailsTest
+class GreetingServiceTest < Minitest::Promptfoo::PromptTest
   self.providers = "openai:gpt-4o-mini"
 
   # Automatically finds app/services/greeting_service.ptmpl
@@ -303,7 +303,7 @@ When using `Minitest::Promptfoo::Test` (non-Rails), note these differences:
 - No automatic database transaction rollbacks
 - Uses plain Minitest assertions
 
-For Rails projects, use `Minitest::Promptfoo::RailsTest` to get all Rails testing features plus automatic prompt discovery.
+For Rails projects, use `Minitest::Promptfoo::PromptTest` to get all Rails testing features plus automatic prompt discovery.
 
 ## Development
 

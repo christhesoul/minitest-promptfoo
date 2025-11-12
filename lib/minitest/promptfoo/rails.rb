@@ -8,7 +8,7 @@ module Minitest
     #   app/services/foo/bar.ptmpl → test/services/foo/bar_test.rb
     #
     # Usage:
-    #   class MyPromptTest < Minitest::Promptfoo::RailsTest
+    #   class MyPromptTest < Minitest::Promptfoo::PromptTest
     #     # No need to define prompt_path, it's auto-discovered!
     #
     #     test "generates greeting" do
@@ -50,8 +50,8 @@ module Minitest
     if defined?(ActiveSupport)
       # Defer class definition until Rails test framework is fully loaded
       ActiveSupport.on_load(:active_support_test_case) do
-        unless Minitest::Promptfoo.const_defined?(:RailsTest)
-          class RailsTest < ActiveSupport::TestCase
+        unless Minitest::Promptfoo.const_defined?(:PromptTest)
+          class PromptTest < ActiveSupport::TestCase
             include Minitest::Promptfoo::TestMethods
             include Minitest::Promptfoo::Rails
           end
@@ -59,7 +59,7 @@ module Minitest
       end
     else
       # Fallback if ActiveSupport isn't available
-      class RailsTest < Test
+      class PromptTest < Test
         include Rails
       end
     end
