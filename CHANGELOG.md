@@ -32,3 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.2] - Growin' Up
 
 - Fixed more bugs relating to Rails implementation
+
+## [0.1.3] - Does This Bus Stop at 82nd Street?
+
+- Renamed `Minitest::Promptfoo::RailsTest` to `Minitest::Promptfoo::PromptTest` for clearer semantics
