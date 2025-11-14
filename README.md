@@ -143,6 +143,24 @@ assert_prompt(vars: { query: "status" }) do |response|
 end
 ```
 
+#### Handling Markdown-Wrapped JSON
+
+Some providers (looking at you, Anthropic) wrap JSON responses in markdown code fences like ` ```json `. Use `force_json!` to strip these before parsing:
+
+```ruby
+assert_prompt(vars: { query: "status" }) do |response|
+  response.force_json!  # Strips ```json and ``` wrappers
+
+  response.json_includes(key: "status", value: "success")
+  response.json_includes(key: "exclusive_to_app", value: true)
+end
+```
+
+When `force_json!` is called:
+- Markdown code fences are automatically stripped before JSON parsing
+- The `is-json` validation is skipped (since the raw output isn't valid JSON)
+- All subsequent `json_includes` assertions handle the stripping automatically
+
 ### Custom JavaScript
 
 ```ruby
