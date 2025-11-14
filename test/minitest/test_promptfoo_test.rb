@@ -44,6 +44,21 @@ module Minitest
         assert_equal(2, assertions.length)
         assert_equal("is-json", assertions[0]["type"])
         assert_equal("javascript", assertions[1]["type"])
+        refute_match(/replace/, assertions[1]["value"])
+      end
+
+      def test_assertion_builder_json_includes_with_force_json
+        builder = Minitest::Promptfoo::AssertionBuilder.new
+        builder.force_json!
+        builder.json_includes(key: "status", value: "success")
+
+        assertions = builder.to_promptfoo_assertions
+        assert_equal(2, assertions.length)
+        assert_equal("is-json", assertions[0]["type"])
+        assert_equal("javascript", assertions[1]["type"])
+        # Should include the replace logic to strip markdown fences
+        assert_match(/replace/, assertions[1]["value"])
+        assert_match(/```/, assertions[1]["value"])
       end
 
       def test_assertion_builder_rubric

@@ -47,10 +47,18 @@ module Minitest
         @assertions << {
           "type" => "is-json"
         }
+
+        # Build the parsing logic - strip markdown fences if force_json is enabled
+        parse_logic = if @force_json
+          "JSON.parse(output.replace(/^```(?:json)?\\n?|\\n?```$/g, '').trim())"
+        else
+          "JSON.parse(output)"
+        end
+
         # Handle both string output (needs parsing) and object output (already parsed)
         @assertions << {
           "type" => "javascript",
-          "value" => "(typeof output === 'string' ? JSON.parse(output) : output)[#{key.inspect}] === #{value.to_json}"
+          "value" => "(typeof output === 'string' ? #{parse_logic} : output)[#{key.inspect}] === #{value.to_json}"
         }
       end
 
