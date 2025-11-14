@@ -53,7 +53,8 @@ module Minitest
           providers: providers,
           assertions: builder.to_promptfoo_assertions,
           verbose: verbose,
-          pre_render: pre_render
+          pre_render: pre_render,
+          force_json: builder.force_json?
         )
 
         # Real assertion: verify promptfoo produced results
@@ -62,7 +63,7 @@ module Minitest
         output
       end
 
-      def evaluate_prompt(prompt_text:, vars:, providers: nil, assertions: [], pre_render: false, verbose: false, show_output: false)
+      def evaluate_prompt(prompt_text:, vars:, providers: nil, assertions: [], pre_render: false, verbose: false, show_output: false, force_json: false)
         Dir.mktmpdir do |tmpdir|
           config_path = File.join(tmpdir, "promptfooconfig.yaml")
           output_path = File.join(tmpdir, "output.json")
@@ -87,7 +88,8 @@ module Minitest
             vars: config_vars,
             providers: providers_array,
             assertions: assertions,
-            output_path: output_path
+            output_path: output_path,
+            force_json: force_json
           )
 
           config_yaml = YAML.dump(config)
@@ -144,14 +146,21 @@ module Minitest
         end
       end
 
-      def build_promptfoo_config(prompt:, vars:, providers:, assertions:, output_path:)
+      def build_promptfoo_config(prompt:, vars:, providers:, assertions:, output_path:, force_json: false)
         normalized_providers = providers.map do |provider|
-          case provider
+          provider_config = case provider
           when String
-            provider
+            { "id" => provider }
           when Hash
             deep_stringify_keys(provider)
           end
+
+          if force_json
+            provider_config["config"] ||= {}
+            provider_config["config"]["transformResponse"] = strip_markdown_fences_js
+          end
+
+          provider_config
         end
 
         {
@@ -198,6 +207,11 @@ module Minitest
         when Array then value.map { |v| stringify_value(v) }
         else value
         end
+      end
+
+      # JavaScript function to strip markdown code fences from JSON responses
+      def strip_markdown_fences_js
+        "json.output.replace(/^```(?:json)?\\n?|\\n?```$/g, '').trim()"
       end
     end
   end

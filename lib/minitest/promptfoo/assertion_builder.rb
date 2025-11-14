@@ -15,6 +15,7 @@ module Minitest
     class AssertionBuilder
       def initialize
         @assertions = []
+        @force_json = false
       end
 
       # String inclusion check
@@ -68,6 +69,16 @@ module Minitest
           "value" => criteria,
           "threshold" => threshold
         }
+      end
+
+      # Force JSON parsing by stripping markdown code fences
+      def force_json!
+        @force_json = true
+      end
+
+      # Check if force_json was called
+      def force_json?
+        @force_json
       end
 
       # Convert to promptfoo assertion format
