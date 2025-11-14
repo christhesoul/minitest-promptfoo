@@ -44,9 +44,12 @@ module Minitest
 
       # JSON structure validation using JavaScript
       def json_includes(key:, value:)
-        @assertions << {
-          "type" => "is-json"
-        }
+        # Only validate is-json if we're not forcing JSON (since force_json means output may have markdown fences)
+        unless @force_json
+          @assertions << {
+            "type" => "is-json"
+          }
+        end
 
         # Build the parsing logic - strip markdown fences if force_json is enabled
         parse_logic = if @force_json
